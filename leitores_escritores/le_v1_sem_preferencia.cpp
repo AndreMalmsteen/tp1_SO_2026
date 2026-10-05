@@ -82,19 +82,26 @@ int main() {
     cout << "Quantidade de leitores: ";   cin >> n_leitores;
     cout << "Quantidade de escritores: "; cin >> n_escritores;
 
-    vector<thread> threads;
+    // 1) Primeiro le TODA a configuracao (as threads ainda nao existem)
+    vector<int>    valores(n_escritores);
+    vector<double> atrasos_e(n_escritores), atrasos_l(n_leitores);
 
     for (int i = 0; i < n_escritores; i++) {
-        int valor; double atraso;
-        cout << "Escritor " << i << " - valor a gravar: ";             cin >> valor;
-        cout << "Escritor " << i << " - atraso de chegada (0 a 3 s, aceita decimal ex: 0.5): "; cin >> atraso;
-        threads.emplace_back(escritor, i, valor, atraso);
+        cout << "Escritor " << i << " - valor a gravar: ";                        cin >> valores[i];
+        cout << "Escritor " << i << " - atraso de chegada (0 a 3 s, decimal ok): "; cin >> atrasos_e[i];
     }
     for (int i = 0; i < n_leitores; i++) {
-        double atraso;
-        cout << "Leitor " << i << " - atraso de chegada (0 a 3 s, aceita decimal ex: 0.5): "; cin >> atraso;
-        threads.emplace_back(leitor, i, atraso);
+        cout << "Leitor " << i << " - atraso de chegada (0 a 3 s, decimal ok): "; cin >> atrasos_l[i];
     }
+
+    // 2) Depois cria todas as threads de uma vez, para os atrasos
+    //    serem contados a partir do mesmo instante
+    cout << "\n===== INICIO DA SIMULACAO =====" << endl;
+    vector<thread> threads;
+    for (int i = 0; i < n_escritores; i++)
+        threads.emplace_back(escritor, i, valores[i], atrasos_e[i]);
+    for (int i = 0; i < n_leitores; i++)
+        threads.emplace_back(leitor, i, atrasos_l[i]);
 
     for (auto& t : threads) t.join();
 
