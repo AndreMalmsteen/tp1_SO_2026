@@ -111,3 +111,6 @@ int main() {
 
 // para compilar:
 // g++ -std=c++17 -pthread le_v1_sem_preferencia.cpp -o le_v1
+
+// printf "3\n1\n5\n0\n0.5\n1.5\n2.5\n" | ./le_v1
+// 3 leitores, 1 escritor (valor 5, atraso 0), leitores com atrasos 0.5, 1.5 e 2.5. O escritor grava agencia=5 em 0 s e central=5 em 1 s
