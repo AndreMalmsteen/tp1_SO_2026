@@ -1,9 +1,11 @@
 #pragma once
 #include <atomic>
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <semaphore.h>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Item que trafega pela fila
@@ -130,7 +132,65 @@ public:
     int saldo() const { return saldo_; }
     int esperado() const { return inicial_ + depositado_ - sacado_; }
 
+    // =====================================================================
+    // ACRESCIMOS no TAD PARA LEITORES/ESCRITORES (parte 1)
+    // Leitor = CONSULTA do saldo. Escritor = DEPOSITO.
+    // Invariante: saldo() == esperado() quando ninguem esta escrevendo.
+    // Um deposito e feito em varios passos, com pausa (regiaoSeg) entre eles,
+    // para que o problema possa ser observado:
+    //   1) le o saldo   2) pausa   3) grava saldo   4) pausa   5) registra o deposito
+    // Entre os passos 3 e 5, saldo() != esperado()  ->  LEITURA SUJA.
+    // =====================================================================
+
+    // Leitor: NAO usa semaforo nenhum (nunca bloqueia, nem por escritor, nem por leitor).
+    void consultarSemControle(const std::string& quem, double regiaoSeg) {
+        std::printf("%s: ENTROU na regiao critica (sem bloqueio)\n", quem.c_str());
+        int s = saldo_;
+        int e = esperado();
+        std::printf("%s: leu saldo=%d (esperado=%d)%s\n", quem.c_str(), s, e,
+                    s != e ? "  <-- LEITURA SUJA!" : "");
+        dormirSeg(regiaoSeg);   // simula o tempo usando o dado
+        std::printf("%s: SAIU da regiao critica\n", quem.c_str());
+    }
+
+    // Escritor da VERSAO 1: semaforo (mutex_) so ENTRE ESCRITORES.
+    void depositarComSemaforo(int valor, const std::string& quem, double regiaoSeg) {
+        std::printf("%s: quer entrar na regiao critica\n", quem.c_str());
+        if (sem_trywait(&mutex_) == -1 && errno == EAGAIN) {
+            std::printf("%s: BLOQUEADO (outro escritor esta na regiao critica)\n", quem.c_str());
+            sem_wait(&mutex_);
+            std::printf("%s: DESBLOQUEADO\n", quem.c_str());
+        }
+        depositoEmPassos(valor, quem, regiaoSeg);
+        sem_post(&mutex_);
+    }
+
+    // Escritor da VERSAO 3: NENHUM controle de concorrencia.
+    void depositarSemControle(int valor, const std::string& quem, double regiaoSeg) {
+        std::printf("%s: quer entrar na regiao critica\n", quem.c_str());
+        std::printf("%s: (sem controle: entra direto)\n", quem.c_str());
+        depositoEmPassos(valor, quem, regiaoSeg);
+    }
+
 private:
+    static void dormirSeg(double seg) {
+        std::this_thread::sleep_for(std::chrono::duration<double>(seg));
+    }
+
+    // Regiao critica do escritor (usada pelas duas versoes)
+    void depositoEmPassos(int valor, const std::string& quem, double regiaoSeg) {
+        std::printf("%s: ENTROU na regiao critica (DEPOSITO %d)\n", quem.c_str(), valor);
+        int lido = saldo_;                               // passo 1: le o saldo
+        std::printf("%s: leu saldo=%d\n", quem.c_str(), lido);
+        dormirSeg(regiaoSeg);                            // passo 2: pausa
+        saldo_ = lido + valor;                           // passo 3: grava o saldo
+        std::printf("%s: gravou saldo=%d\n", quem.c_str(), saldo_);
+        dormirSeg(regiaoSeg);                            // passo 4: pausa (saldo ja mudou, registro ainda nao)
+        depositado_ += valor;                            // passo 5: registra o deposito
+        std::printf("%s: SAIU da regiao critica. saldo=%d esperado=%d\n",
+                    quem.c_str(), saldo_, esperado());
+    }
+
     int saldo_;
     int inicial_;
     std::atomic<int> depositado_;
