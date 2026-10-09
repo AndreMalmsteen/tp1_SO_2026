@@ -68,8 +68,6 @@ int main() {
     return 0;
 }
 
-// para compilar:
-// g++ -std=c++17 -pthread le_v1_sem_preferencia.cpp -o le_v1
 
-// v1, leitura suja: printf "3\n1\n50\n0\n0.5\n1.5\n2.5\n" | ./le_v1
-// v1, bloqueio entre escritores: printf "0\n2\n50\n0\n30\n0.5\n" | ./le_v1
+// v1, leitura suja: printf "3\n1\n50\n0\n0.5\n1.5\n2.5\n" | ./le_v1_sem_preferencia
+// v1, bloqueio entre escritores: printf "0\n2\n50\n0\n30\n0.5\n" | ./le_v1_sem_preferencia

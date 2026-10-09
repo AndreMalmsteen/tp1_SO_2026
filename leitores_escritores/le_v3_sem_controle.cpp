@@ -1,7 +1,7 @@
 // Leitores/Escritores - Versao 3: SEM controle de concorrencia
 // Compilar: g++ -std=c++17 -pthread le_v3_sem_controle.cpp -o le_v3_sem_controle
-// Entrada: pedida pelo teclado (veja as perguntas do programa)
-#include "conta_le_tad.hpp"
+// Usa o TAD ContaBancaria (banco_tad.hpp): Leitor = consulta de saldo, Escritor = deposito
+#include "banco_tad.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -9,27 +9,28 @@
 #include <thread>
 #include <vector>
 
-const double SLEEP_REGIAO_S = 1.0;   // tempo dentro da regiao critica (1 segundo)
-const double MAX_ATRASO_S   = 3.0;   // limite maximo de qualquer atraso (3 segundos)
+const double SLEEP_REGIAO_S = 1.0;   // pausa dentro da regiao critica (1 segundo)
+const double MAX_ATRASO_S   = 3.0;   // limite maximo do atraso de chegada (3 segundos)
+const int    SALDO_INICIAL  = 100;
 
 void dormir(double seg) {
     seg = std::max(0.0, std::min(seg, MAX_ATRASO_S));
     std::this_thread::sleep_for(std::chrono::duration<double>(seg));
 }
 
-void leitor(ContaCompartilhada& conta, int id, double atraso_s) {
+void leitor(ContaBancaria& conta, int id, double atraso_s) {
     std::string nome = "Leitor " + std::to_string(id);
     std::printf("%s: criado\n", nome.c_str());
     dormir(atraso_s);
-    conta.ler(nome);
+    conta.consultarSemControle(nome, SLEEP_REGIAO_S);
     std::printf("%s: finalizado\n", nome.c_str());
 }
 
-void escritor(ContaCompartilhada& conta, int id, int valor, double atraso_s) {
+void escritor(ContaBancaria& conta, int id, int valor, double atraso_s) {
     std::string nome = "Escritor " + std::to_string(id);
     std::printf("%s: criado\n", nome.c_str());
     dormir(atraso_s);
-    conta.escrever(valor, nome);
+    conta.depositarSemControle(valor, nome, SLEEP_REGIAO_S);
     std::printf("%s: finalizado\n", nome.c_str());
 }
 
@@ -42,17 +43,17 @@ int main() {
     std::vector<int>    valores(ne);
     std::vector<double> atrasosE(ne), atrasosL(nl);
     for (int i = 0; i < ne; i++) {
-        std::cout << "Escritor " << i << " - valor a gravar: ";                          std::cin >> valores[i];
+        std::cout << "Escritor " << i << " - valor a depositar: ";                       std::cin >> valores[i];
         std::cout << "Escritor " << i << " - atraso de chegada (0 a 3 s, decimal ok): "; std::cin >> atrasosE[i];
     }
     for (int i = 0; i < nl; i++) {
         std::cout << "Leitor " << i << " - atraso de chegada (0 a 3 s, decimal ok): "; std::cin >> atrasosL[i];
     }
 
-    ContaCompartilhada conta(false, SLEEP_REGIAO_S);
+    ContaBancaria conta(SALDO_INICIAL);
 
     // 2) Cria todas as threads de uma vez (atrasos contados do mesmo instante)
-    std::printf("\n===== INICIO DA SIMULACAO =====\n");
+    std::printf("\n===== INICIO DA SIMULACAO (saldo inicial = %d) =====\n", SALDO_INICIAL);
     std::vector<std::thread> threads;
     for (int i = 0; i < ne; i++)
         threads.emplace_back(escritor, std::ref(conta), i, valores[i], atrasosE[i]);
@@ -62,11 +63,12 @@ int main() {
     for (auto& t : threads) t.join();
 
     std::printf("Todas as threads concluiram.\n");
-    std::printf("Estado final: agencia=%d central=%d\n", conta.agencia(), conta.central());
+    std::printf("Saldo final = %d | esperado = %d -> %s\n", conta.saldo(), conta.esperado(),
+                conta.saldo() == conta.esperado() ? "CONSISTENTE" : "INCONSISTENTE");
     return 0;
 }
 
 // para compilar:
 // g++ -std=c++17 -pthread le_v3_sem_controle.cpp -o le_v3
 
-// v3, corrupção (mesma entrada do v1): printf "0\n2\n50\n0\n30\n0.5\n" | ./le_v3
+// v3, corrupção (mesma entrada do v1): printf "0\n2\n50\n0\n30\n0.5\n" | ./le_v3_sem_controle.cpp
