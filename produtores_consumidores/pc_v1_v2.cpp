@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <random>
 #include <thread>
-
+#include <functional>
 
 
 void cliente(FilaLimitada<Operacao>& fila, int id, int n, int delay_ms) {   // produtor
