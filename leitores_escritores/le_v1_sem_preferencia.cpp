@@ -1,7 +1,7 @@
 // Leitores/Escritores - Versao 1: sem preferencia (semaforo so entre escritores; leitura suja pode ocorrer)
 // Compilar: g++ -std=c++17 -pthread le_v1_sem_preferencia.cpp -o le_v1_sem_preferencia
 // Usa o TAD ContaBancaria (banco_tad.hpp): Leitor = consulta de saldo, Escritor = deposito
-#include "banco_tad.hpp"
+#include "../produtores_consumidores/pc_v1_v2_cabecalho.hpp"
 
 #include <algorithm>
 #include <functional>
