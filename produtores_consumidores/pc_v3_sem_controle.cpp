@@ -7,7 +7,7 @@
 // Nao ha semaforo nem mutex protegendo a fila ou a conta (printf ja serializa cada linha impressa).
 // Os "!!!" marcam, com o tempo desde o inicio, onde a versao correta (v1/v2) bloquearia ou
 // protegeria a regiao critica.
-#include "banco_tad.hpp"
+#include "pc_v1_v2_cabecalho.hpp"
 
 #include <chrono>
 #include <cstdlib>
