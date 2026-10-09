@@ -2,7 +2,7 @@
 // Uso: ./banco CLIENTES CAIXAS OPS_POR_CLIENTE DELAY_CLIENTE_MS DELAY_CAIXA_MS [TAM_FILA] [SALDO_INICIAL]
 //   Versao 1 (varios produtores, 1 consumidor):        .\banco 4 1 5 300 100
 //   Versao 2 (varios produtores, varios consumidores): .\banco 4 3 5 300 100
-#include "banco_tad.hpp"
+#include "pc_v1_v2_cabecalho.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -45,8 +45,8 @@ int main(int argc, char** argv) {
     int dc = std::atoi(argv[4]), dx = std::atoi(argv[5]);
     int tam    = (argc > 6) ? std::atoi(argv[6]) : 5;
     int saldo0 = (argc > 7) ? std::atoi(argv[7]) : 100;
-    if (nc < 1 || nx < 1 || ops < 1 || tam < 1) {
-        std::printf("CLIENTES, CAIXAS, OPS e TAM devem ser >= 1\n");
+    if (nc < 1 || nx < 1 || ops < 1 || tam < 1 || dc < 0 || dx < 0) {
+        std::printf("CLIENTES, CAIXAS, OPS e TAM devem ser >= 1 | DELAY_CLIENTE_MS e DELAY_CAIXA_MS devem ser >= 0 \n");
         return 1;
     }
 
